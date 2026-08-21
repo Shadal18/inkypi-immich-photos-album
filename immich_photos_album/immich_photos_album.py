@@ -114,7 +114,7 @@ class ImmichPhotosAlbum(BasePlugin):
 
             selected = self._pick_photo(photos, selection_mode)
 
-            image = self._download_photo(
+            image = self._download_preview(
                 session=session,
                 server_url=server_url,
                 photo=selected,
@@ -124,7 +124,7 @@ class ImmichPhotosAlbum(BasePlugin):
             if image is None:
                 return self._error_image(
                     device_config,
-                    "Failed to download\nselected photo",
+                    "Failed to download\nphoto preview",
                 )
 
             return self._compose_canvas(
@@ -319,43 +319,27 @@ class ImmichPhotosAlbum(BasePlugin):
         except ValueError:
             return 0.0
 
-    def _download_photo(
+    def _download_preview(
         self,
         session: requests.Session,
         server_url: str,
         photo: ImmichPhoto,
         timeout_seconds: int,
     ) -> Optional[Image.Image]:
-        image_urls = [
-            f"{server_url}/api/assets/{photo.asset_id}/thumbnail?size=preview",
-            f"{server_url}/api/assets/{photo.asset_id}/original",
-        ]
+        preview_url = (
+            f"{server_url}/api/assets/{photo.asset_id}/thumbnail?size=preview"
+        )
 
-        for image_url in image_urls:
-            try:
-                response = session.get(
-                    image_url,
-                    timeout=timeout_seconds,
-                )
-                response.raise_for_status()
+        response = session.get(
+            preview_url,
+            timeout=timeout_seconds,
+        )
+        response.raise_for_status()
 
-                image = Image.open(io.BytesIO(response.content))
-                image.load()
+        image = Image.open(io.BytesIO(response.content))
+        image.load()
 
-                return self._to_rgb(image)
-
-            except (
-                requests.exceptions.RequestException,
-                OSError,
-            ) as exc:
-                LOGGER.debug(
-                    "Could not retrieve Immich image from %s: %s",
-                    image_url,
-                    exc,
-                )
-
-        LOGGER.error("Unable to download Immich asset %s", photo.asset_id)
-        return None
+        return self._to_rgb(image)
 
     def _to_rgb(self, image: Image.Image) -> Image.Image:
         if image.mode == "RGBA":

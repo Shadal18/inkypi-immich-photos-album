@@ -371,9 +371,12 @@
     <section class="im-hint-card">
       <div class="im-hint-title">API key setup</div>
       <p class="im-hint-copy">
-        In Immich, create an API key with access to the album and its images. Then open InkyPi’s
-        <strong>API Keys</strong> page using the key icon, add a key named <code>IMMICH_API_KEY</code>, paste the Immich
-        API key as its value, and save it.
+        Create an API key in Immich, then open InkyPi’s <strong>API Keys</strong> page using the key icon. Add the key
+        using the name <code>IMMICH_API_KEY</code>, paste the Immich API key as its value, and save it.
+      </p>
+      <p class="im-hint-copy" style="margin-top: 10px">
+        When creating the Immich API key, enable only these permissions:
+        <code>album.read</code>, <code>asset.read</code>, and <code>asset.view</code>.
       </p>
     </section>
 
