@@ -1,0 +1,142 @@
+<div class="form-group">
+  <label for="server_url" class="form-label">Immich server URL</label>
+  <input
+    type="url"
+    id="server_url"
+    name="server_url"
+    class="form-input"
+    placeholder="http://192.168.1.50:2283"
+    required
+  />
+  <small>Use the URL InkyPi can reach on your local network.</small>
+</div>
+
+<div class="form-group">
+  <label for="album_id" class="form-label">Album ID</label>
+  <input type="text" id="album_id" name="album_id" class="form-input" placeholder="Immich album UUID" required />
+  <small>Open the album in Immich and copy its UUID from the browser URL.</small>
+</div>
+
+<div class="form-group">
+  <label for="api_key_name" class="form-label">InkyPi environment key</label>
+  <input type="text" id="api_key_name" name="api_key_name" class="form-input" value="IMMICH_API_KEY" required />
+  <small>Add this key and your Immich API key through the InkyPi key settings page.</small>
+</div>
+
+<div class="form-group">
+  <label for="selection" class="form-label">Photo selection</label>
+  <select id="selection" name="selection" class="form-input">
+    <option value="random">Random photo</option>
+    <option value="newest">Newest photo</option>
+    <option value="oldest">Oldest photo</option>
+  </select>
+</div>
+
+<div class="form-group">
+  <label for="fit_mode" class="form-label">Image fit</label>
+  <select id="fit_mode" name="fit_mode" class="form-input">
+    <option value="fill">Fill display (crop if needed)</option>
+    <option value="contain">Show whole image (letterbox if needed)</option>
+  </select>
+</div>
+
+<div class="form-group">
+  <label for="background" class="form-label">Letterbox background</label>
+  <select id="background" name="background" class="form-input">
+    <option value="white">White</option>
+    <option value="black">Black</option>
+  </select>
+</div>
+
+<div class="form-group">
+  <label for="show_border" class="form-label">Show border</label>
+  <select id="show_border" name="show_border" class="form-input">
+    <option value="0">No</option>
+    <option value="1">Yes</option>
+  </select>
+</div>
+
+<div class="form-group">
+  <label for="border_size" class="form-label">Border padding</label>
+  <input type="number" id="border_size" name="border_size" class="form-input" min="0" max="60" step="1" value="10" />
+</div>
+
+<div class="form-group">
+  <label for="auto_contrast" class="form-label">Auto contrast</label>
+  <select id="auto_contrast" name="auto_contrast" class="form-input">
+    <option value="0">Off</option>
+    <option value="1">On</option>
+  </select>
+  <small>Can improve photo readability on e-paper displays.</small>
+</div>
+
+<div class="form-group">
+  <label for="timeout_seconds" class="form-label">Request timeout (seconds)</label>
+  <input
+    type="number"
+    id="timeout_seconds"
+    name="timeout_seconds"
+    class="form-input"
+    min="5"
+    max="120"
+    step="1"
+    value="30"
+  />
+</div>
+
+<div class="form-group">
+  <a href="https://github.com/shadal18/inkypi-immich-album" target="_blank" rel="noopener noreferrer">
+    github.com/shadal18/inkypi-immich-album
+  </a>
+</div>
+
+<style>
+  .floatingchat-container-wrap,
+  .floating-chat-kofi-popup-iframe {
+    left: unset !important;
+    right: 16px !important;
+  }
+  .floatingchat-container-wrap {
+    bottom: 14px !important;
+  }
+  .floating-chat-kofi-popup-iframe {
+    bottom: 76px !important;
+  }
+</style>
+
+<script src="https://storage.ko-fi.com/cdn/scripts/overlay-widget.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const defaults = {
+      server_url: "",
+      album_id: "",
+      api_key_name: "IMMICH_API_KEY",
+      selection: "random",
+      fit_mode: "fill",
+      background: "white",
+      show_border: "0",
+      border_size: "10",
+      auto_contrast: "0",
+      timeout_seconds: "30",
+    }
+
+    const values =
+      typeof loadPluginSettings !== "undefined" && loadPluginSettings && typeof pluginSettings !== "undefined"
+        ? Object.assign({}, defaults, pluginSettings)
+        : defaults
+
+    Object.keys(defaults).forEach(function (key) {
+      const element = document.getElementById(key)
+      if (element) element.value = values[key] != null ? values[key] : defaults[key]
+    })
+
+    if (typeof kofiWidgetOverlay !== "undefined") {
+      kofiWidgetOverlay.draw("shadal", {
+        type: "floating-chat",
+        "floating-chat.donateButton.text": "I ❤️ Coffee",
+        "floating-chat.donateButton.background-color": "#00b9fe",
+        "floating-chat.donateButton.text-color": "#fff",
+      })
+    }
+  })
+</script>

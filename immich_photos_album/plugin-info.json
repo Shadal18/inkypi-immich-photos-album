@@ -1,0 +1,6 @@
+{
+  "display_name": "Immich Photos Album",
+  "id": "immich_photos_album",
+  "class": "ImmichPhotosAlbum",
+  "repository_url": "https://github.com/shadal18/inkypi-immich-photos-album"
+}
