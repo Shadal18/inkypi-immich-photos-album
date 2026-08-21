@@ -1,108 +1,572 @@
-<div class="form-group">
-  <label for="server_url" class="form-label">Immich server URL</label>
-  <input
-    type="url"
-    id="server_url"
-    name="server_url"
-    class="form-input"
-    placeholder="http://192.168.1.50:2283"
-    required
-  />
-  <small>Use the URL InkyPi can reach on your local network.</small>
-</div>
-
-<div class="form-group">
-  <label for="album_id" class="form-label">Album ID</label>
-  <input type="text" id="album_id" name="album_id" class="form-input" placeholder="Immich album UUID" required />
-  <small>Open the album in Immich and copy its UUID from the browser URL.</small>
-</div>
-
-<div class="form-group">
-  <label for="api_key_name" class="form-label">InkyPi environment key</label>
-  <input type="text" id="api_key_name" name="api_key_name" class="form-input" value="IMMICH_API_KEY" required />
-  <small>Add this key and your Immich API key through the InkyPi key settings page.</small>
-</div>
-
-<div class="form-group">
-  <label for="selection" class="form-label">Photo selection</label>
-  <select id="selection" name="selection" class="form-input">
-    <option value="random">Random photo</option>
-    <option value="newest">Newest photo</option>
-    <option value="oldest">Oldest photo</option>
-  </select>
-</div>
-
-<div class="form-group">
-  <label for="fit_mode" class="form-label">Image fit</label>
-  <select id="fit_mode" name="fit_mode" class="form-input">
-    <option value="fill">Fill display (crop if needed)</option>
-    <option value="contain">Show whole image (letterbox if needed)</option>
-  </select>
-</div>
-
-<div class="form-group">
-  <label for="background" class="form-label">Letterbox background</label>
-  <select id="background" name="background" class="form-input">
-    <option value="white">White</option>
-    <option value="black">Black</option>
-  </select>
-</div>
-
-<div class="form-group">
-  <label for="show_border" class="form-label">Show border</label>
-  <select id="show_border" name="show_border" class="form-input">
-    <option value="0">No</option>
-    <option value="1">Yes</option>
-  </select>
-</div>
-
-<div class="form-group">
-  <label for="border_size" class="form-label">Border padding</label>
-  <input type="number" id="border_size" name="border_size" class="form-input" min="0" max="60" step="1" value="10" />
-</div>
-
-<div class="form-group">
-  <label for="auto_contrast" class="form-label">Auto contrast</label>
-  <select id="auto_contrast" name="auto_contrast" class="form-input">
-    <option value="0">Off</option>
-    <option value="1">On</option>
-  </select>
-  <small>Can improve photo readability on e-paper displays.</small>
-</div>
-
-<div class="form-group">
-  <label for="timeout_seconds" class="form-label">Request timeout (seconds)</label>
-  <input
-    type="number"
-    id="timeout_seconds"
-    name="timeout_seconds"
-    class="form-input"
-    min="5"
-    max="120"
-    step="1"
-    value="30"
-  />
-</div>
-
-<div class="form-group">
-  <a href="https://github.com/shadal18/inkypi-immich-album" target="_blank" rel="noopener noreferrer">
-    github.com/shadal18/inkypi-immich-album
-  </a>
-</div>
-
 <style>
+  :root {
+    --im-bg: var(--background-color, var(--color-background, #f5f7fb));
+    --im-bg-soft: var(--card-background-secondary, var(--color-surface-2, #eef2f7));
+    --im-panel: var(--card-background, var(--color-surface, #ffffff));
+    --im-panel-2: var(--card-background-hover, var(--color-surface-2, #f8fafc));
+    --im-border: var(--border-color, rgba(15, 23, 42, 0.12));
+    --im-text: var(--text-primary, var(--color-text, #0f172a));
+    --im-text-muted: var(--text-secondary, var(--color-text-secondary, #475569));
+    --im-text-soft: var(--text-muted, #64748b);
+    --im-primary: var(--accent-color, #14b8a6);
+    --im-info: var(--info-color, #3b82f6);
+    --im-shadow-sm: 0 8px 24px rgba(15, 23, 42, 0.08);
+    --im-radius-xl: 18px;
+    --im-radius-lg: 14px;
+  }
+
+  html.dark,
+  body.dark,
+  [data-theme="dark"],
+  html[data-theme="dark"] {
+    --im-bg: var(--background-color, var(--color-background, #0f172a));
+    --im-bg-soft: var(--card-background-secondary, var(--color-surface-2, #162033));
+    --im-panel: var(--card-background, var(--color-surface, #111827));
+    --im-panel-2: var(--card-background-hover, var(--color-surface-2, #172033));
+    --im-border: var(--border-color, rgba(255, 255, 255, 0.1));
+    --im-text: var(--text-primary, var(--color-text, #f8fafc));
+    --im-text-muted: var(--text-secondary, var(--color-text-secondary, #cbd5e1));
+    --im-text-soft: var(--text-muted, #94a3b8);
+    --im-shadow-sm: 0 10px 28px rgba(0, 0, 0, 0.22);
+  }
+
+  .immich-settings-container {
+    width: 100%;
+    box-sizing: border-box;
+    color: var(--im-text);
+  }
+
+  .im-shell {
+    display: grid;
+    gap: 18px;
+    margin-top: 8px;
+  }
+
+  .im-hero {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--im-radius-xl);
+    border: 1px solid var(--im-border);
+    background:
+      radial-gradient(circle at top right, color-mix(in srgb, var(--im-primary) 16%, transparent), transparent 34%),
+      radial-gradient(circle at bottom left, color-mix(in srgb, var(--im-info) 12%, transparent), transparent 30%),
+      linear-gradient(180deg, color-mix(in srgb, var(--im-panel) 92%, var(--im-bg-soft) 8%), var(--im-panel-2));
+    box-shadow: var(--im-shadow-sm);
+    padding: 22px 22px 18px;
+  }
+
+  .im-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--im-primary) 14%, transparent);
+    color: var(--im-primary);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    border: 1px solid color-mix(in srgb, var(--im-primary) 22%, transparent);
+  }
+
+  .im-hero h2 {
+    margin: 0;
+    color: var(--im-text);
+    font-size: 28px;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+  }
+
+  .im-hero p {
+    margin: 10px 0 0;
+    max-width: 68ch;
+    color: var(--im-text-muted);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .im-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 18px;
+  }
+
+  .im-metric {
+    border: 1px solid var(--im-border);
+    border-radius: var(--im-radius-lg);
+    background: color-mix(in srgb, var(--im-panel) 92%, var(--im-bg) 8%);
+    padding: 14px 14px 12px;
+    min-width: 0;
+    box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 22%, transparent);
+  }
+
+  .im-metric-label {
+    color: var(--im-text-soft);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+  }
+
+  .im-metric-value {
+    color: var(--im-text);
+    font-size: 28px;
+    line-height: 1;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+
+  .im-metric-sub {
+    color: var(--im-text-muted);
+    font-size: 12px;
+    margin-top: 6px;
+  }
+
+  .im-section,
+  .im-link-card,
+  .im-hint-card {
+    border: 1px solid var(--im-border);
+    border-radius: var(--im-radius-xl);
+    background: linear-gradient(180deg, var(--im-panel), var(--im-panel-2));
+    box-shadow: var(--im-shadow-sm);
+    overflow: hidden;
+  }
+
+  .im-section-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 20px;
+    border-bottom: 1px solid var(--im-border);
+  }
+
+  .im-section-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+    border: 1px solid var(--im-border);
+    background: color-mix(in srgb, var(--im-bg-soft) 65%, var(--im-panel) 35%);
+  }
+
+  .im-section-copy {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .im-section-title {
+    color: var(--im-text);
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.2;
+    margin: 0;
+  }
+
+  .im-section-subtitle {
+    color: var(--im-text-muted);
+    font-size: 13px;
+    margin-top: 4px;
+  }
+
+  .im-section-body {
+    padding: 18px 20px 20px;
+  }
+
+  .im-grid {
+    display: grid;
+    gap: 16px;
+  }
+
+  .im-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .im-field {
+    display: grid;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .im-label {
+    color: var(--im-text-soft);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .im-input,
+  .immich-settings-container input[type="text"],
+  .immich-settings-container input[type="url"],
+  .immich-settings-container input[type="number"],
+  .immich-settings-container select {
+    width: 100%;
+    min-height: 46px;
+    padding: 0 14px;
+    border-radius: 12px;
+    border: 1px solid var(--im-border);
+    background: var(--im-panel);
+    color: var(--im-text);
+    outline: none;
+    box-sizing: border-box;
+    box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 14%, transparent);
+  }
+
+  .im-input::placeholder,
+  .immich-settings-container input::placeholder {
+    color: var(--im-text-soft);
+    opacity: 1;
+  }
+
+  .im-input:focus,
+  .immich-settings-container input:focus,
+  .immich-settings-container select:focus {
+    border-color: color-mix(in srgb, var(--im-primary) 45%, transparent);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--im-primary) 14%, transparent);
+  }
+
+  .im-note {
+    margin: 0;
+    color: var(--im-text-muted);
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .im-hint-card {
+    padding: 16px 20px;
+  }
+
+  .im-hint-title {
+    color: var(--im-text);
+    font-size: 14px;
+    font-weight: 700;
+    margin: 0 0 6px;
+  }
+
+  .im-hint-copy {
+    margin: 0;
+    color: var(--im-text-muted);
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .im-hint-copy code {
+    padding: 2px 5px;
+    border-radius: 5px;
+    background: color-mix(in srgb, var(--im-primary) 12%, transparent);
+    color: var(--im-text);
+    font-family: monospace;
+  }
+
+  .im-link-card {
+    padding: 16px 20px;
+  }
+
+  .im-link-card a {
+    color: var(--im-primary);
+    text-decoration: none;
+    font-weight: 700;
+    word-break: break-word;
+  }
+
+  .im-link-card a:hover,
+  .im-link-card a:focus-visible {
+    text-decoration: underline;
+    outline: none;
+  }
+
+  .im-link-help {
+    margin-top: 8px;
+    color: var(--im-text-muted);
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
   .floatingchat-container-wrap,
   .floating-chat-kofi-popup-iframe {
     left: unset !important;
     right: 16px !important;
   }
+
   .floatingchat-container-wrap {
     bottom: 14px !important;
   }
+
   .floating-chat-kofi-popup-iframe {
     bottom: 76px !important;
   }
+
+  @media (max-width: 920px) {
+    .im-metrics,
+    .im-grid-2 {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 760px) {
+    .im-hero {
+      padding: 18px;
+    }
+
+    .im-hero h2 {
+      font-size: 22px;
+    }
+
+    .im-section-header {
+      padding: 16px;
+    }
+
+    .im-section-body,
+    .im-link-card,
+    .im-hint-card {
+      padding: 16px;
+    }
+  }
 </style>
+
+<div class="immich-settings-container">
+  <div class="im-shell">
+    <section class="im-hero">
+      <div class="im-eyebrow">Immich Photos Album</div>
+      <h2>Display images from an album on your Immich server.</h2>
+      <p>
+        Connect InkyPi to your self-hosted Immich instance, select an album, and choose how photos are selected and
+        framed for your e-paper display.
+      </p>
+
+      <div class="im-metrics">
+        <div class="im-metric">
+          <div class="im-metric-label">Source</div>
+          <div class="im-metric-value">Immich</div>
+          <div class="im-metric-sub">Self-hosted photo server and album</div>
+        </div>
+        <div class="im-metric">
+          <div class="im-metric-label">Selection</div>
+          <div class="im-metric-value">3 Modes</div>
+          <div class="im-metric-sub">Random, newest, or oldest image</div>
+        </div>
+        <div class="im-metric">
+          <div class="im-metric-label">Display</div>
+          <div class="im-metric-value">Photo</div>
+          <div class="im-metric-sub">Caption, border, fit, and contrast options</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="im-section">
+      <div class="im-section-header">
+        <span class="im-section-icon" aria-hidden="true">☁</span>
+        <div class="im-section-copy">
+          <div class="im-section-title">Immich connection</div>
+          <div class="im-section-subtitle">Enter the server address and the album you want to display.</div>
+        </div>
+      </div>
+
+      <div class="im-section-body">
+        <div class="im-grid-2">
+          <div class="im-field">
+            <label for="server_url" class="im-label">Immich server URL</label>
+            <input
+              type="url"
+              id="server_url"
+              name="server_url"
+              class="im-input"
+              placeholder="http://192.168.1.50:2283"
+              required
+            />
+            <p class="im-note">Use the URL or local hostname that your InkyPi device can reach.</p>
+          </div>
+
+          <div class="im-field">
+            <label for="album_id" class="im-label">Immich album ID</label>
+            <input
+              type="text"
+              id="album_id"
+              name="album_id"
+              class="im-input"
+              placeholder="Album UUID from the Immich URL"
+              required
+            />
+            <p class="im-note">Open the album in Immich and copy the UUID found at the end of its browser URL.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="im-section">
+      <div class="im-section-header">
+        <span class="im-section-icon" aria-hidden="true">🔑</span>
+        <div class="im-section-copy">
+          <div class="im-section-title">Immich API key</div>
+          <div class="im-section-subtitle">
+            Keep the API key in InkyPi’s API Keys list instead of in plugin settings.
+          </div>
+        </div>
+      </div>
+
+      <div class="im-section-body">
+        <div class="im-grid">
+          <div class="im-field">
+            <label for="api_key_name" class="im-label">InkyPi API key name</label>
+            <input
+              type="text"
+              id="api_key_name"
+              name="api_key_name"
+              class="im-input"
+              placeholder="IMMICH_API_KEY"
+              value="IMMICH_API_KEY"
+              required
+            />
+            <p class="im-note">
+              Add your Immich API key to InkyPi’s <strong>API Keys</strong> list using this exact name. The default is
+              <code>IMMICH_API_KEY</code>.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="im-hint-card">
+      <div class="im-hint-title">API key setup</div>
+      <p class="im-hint-copy">
+        In Immich, create an API key with access to the album and its images. Then open InkyPi’s API Keys page using the
+        key icon, add a key named <code>IMMICH_API_KEY</code>, paste the Immich API key as its value, and save it. If
+        you use a different name, enter that same name in the field above.
+      </p>
+    </section>
+
+    <section class="im-section">
+      <div class="im-section-header">
+        <span class="im-section-icon" aria-hidden="true">🖼️</span>
+        <div class="im-section-copy">
+          <div class="im-section-title">Image selection</div>
+          <div class="im-section-subtitle">Control which photo is chosen from the configured Immich album.</div>
+        </div>
+      </div>
+
+      <div class="im-section-body">
+        <div class="im-grid-2">
+          <div class="im-field">
+            <label for="selection" class="im-label">Photo selection</label>
+            <select id="selection" name="selection" class="im-input">
+              <option value="random">Random photo</option>
+              <option value="newest">Newest photo</option>
+              <option value="oldest">Oldest photo</option>
+            </select>
+            <p class="im-note">Videos are ignored; only image assets in the album are used.</p>
+          </div>
+
+          <div class="im-field">
+            <label for="timeout_seconds" class="im-label">Network timeout (seconds)</label>
+            <input
+              type="number"
+              id="timeout_seconds"
+              name="timeout_seconds"
+              class="im-input"
+              min="5"
+              max="120"
+              step="1"
+              value="30"
+            />
+            <p class="im-note">Increase this if your Immich server or network responds slowly.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="im-section">
+      <div class="im-section-header">
+        <span class="im-section-icon" aria-hidden="true">⚙</span>
+        <div class="im-section-copy">
+          <div class="im-section-title">Display settings</div>
+          <div class="im-section-subtitle">Adjust how photos are framed, captioned, and processed for the screen.</div>
+        </div>
+      </div>
+
+      <div class="im-section-body">
+        <div class="im-grid-2">
+          <div class="im-field">
+            <label for="fit_mode" class="im-label">Image fit</label>
+            <select id="fit_mode" name="fit_mode" class="im-input">
+              <option value="fill">Fill screen (crop if needed)</option>
+              <option value="contain">Fit whole image (letterbox if needed)</option>
+            </select>
+            <p class="im-note">Fill crops to cover the display, while contain keeps the entire image visible.</p>
+          </div>
+
+          <div class="im-field">
+            <label for="background" class="im-label">Background color</label>
+            <select id="background" name="background" class="im-input">
+              <option value="white">White</option>
+              <option value="black">Black</option>
+            </select>
+            <p class="im-note">Used behind contained images and around optional borders.</p>
+          </div>
+
+          <div class="im-field">
+            <label for="show_caption" class="im-label">Show caption bar</label>
+            <select id="show_caption" name="show_caption" class="im-input">
+              <option value="0">Hide</option>
+              <option value="1">Show</option>
+            </select>
+            <p class="im-note">Show or hide the caption bar at the bottom of the display.</p>
+          </div>
+
+          <div class="im-field">
+            <label for="caption_mode" class="im-label">Caption content</label>
+            <select id="caption_mode" name="caption_mode" class="im-input">
+              <option value="album">Album name</option>
+              <option value="filename">Image filename</option>
+              <option value="date">Photo date</option>
+              <option value="asset_id">Asset ID</option>
+            </select>
+            <p class="im-note">Choose what appears in the caption area when captions are enabled.</p>
+          </div>
+
+          <div class="im-field">
+            <label for="show_border" class="im-label">Border</label>
+            <select id="show_border" name="show_border" class="im-input">
+              <option value="0">No border</option>
+              <option value="1">Show border</option>
+            </select>
+            <p class="im-note">Adds a border around the rendered photo.</p>
+          </div>
+
+          <div class="im-field">
+            <label for="border_px" class="im-label">Border size</label>
+            <input type="number" id="border_px" name="border_px" class="im-input" min="0" max="40" step="1" value="8" />
+            <p class="im-note">Border thickness in pixels when the border is enabled.</p>
+          </div>
+
+          <div class="im-field">
+            <label for="enhance_contrast" class="im-label">Auto contrast</label>
+            <select id="enhance_contrast" name="enhance_contrast" class="im-input">
+              <option value="0">Off</option>
+              <option value="1">On</option>
+            </select>
+            <p class="im-note">Can help images read more clearly on e-paper displays.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="im-link-card">
+      <a href="https://github.com/shadal18/inkypi-immich-photos-album" target="_blank" rel="noopener noreferrer">
+        github.com/shadal18/inkypi-immich-photos-album
+      </a>
+      <div class="im-link-help">Setup help, updates, release notes, and source code.</div>
+    </section>
+  </div>
+</div>
 
 <script src="https://storage.ko-fi.com/cdn/scripts/overlay-widget.js"></script>
 <script>
@@ -114,9 +578,11 @@
       selection: "random",
       fit_mode: "fill",
       background: "white",
+      show_caption: "0",
+      caption_mode: "album",
       show_border: "0",
-      border_size: "10",
-      auto_contrast: "0",
+      border_px: "8",
+      enhance_contrast: "0",
       timeout_seconds: "30",
     }
 
@@ -127,7 +593,9 @@
 
     Object.keys(defaults).forEach(function (key) {
       const element = document.getElementById(key)
-      if (element) element.value = values[key] != null ? values[key] : defaults[key]
+      if (element) {
+        element.value = values[key] != null ? values[key] : defaults[key]
+      }
     })
 
     if (typeof kofiWidgetOverlay !== "undefined") {
