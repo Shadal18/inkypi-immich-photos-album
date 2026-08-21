@@ -33,19 +33,24 @@ class ImmichPhotosAlbum(BasePlugin):
     def generate_image(self, settings, device_config, inky_display=None):
         server_url = (settings.get("server_url") or "").strip().rstrip("/")
         album_id = (settings.get("album_id") or "").strip()
-        api_key_name = (settings.get("api_key_name") or "IMMICH_API_KEY").strip()
+        api_key = device_config.load_env_key("IMMICH_API_KEY")
 
-        if not server_url:
-            return self._error_image(device_config, "Immich server URL is required")
-
-        if not album_id:
-            return self._error_image(device_config, "Album ID is required")
-
-        api_key = device_config.get_config(api_key_name)
         if not api_key:
             return self._error_image(
                 device_config,
-                f"Missing environment key\n{api_key_name}",
+                "Missing API key\nIMMICH_API_KEY",
+            )
+
+        if not server_url:
+            return self._error_image(
+                device_config,
+                "Immich server URL\nis required",
+            )
+
+        if not album_id:
+            return self._error_image(
+                device_config,
+                "Album ID is required",
             )
 
         timeout_seconds = self._as_int(
@@ -130,6 +135,41 @@ class ImmichPhotosAlbum(BasePlugin):
                 enhance_contrast=enhance_contrast,
             )
 
+        except requests.exceptions.Timeout:
+            LOGGER.exception("Immich request timed out")
+            return self._error_image(
+                device_config,
+                "Immich request\ntimed out",
+            )
+
+        except requests.exceptions.HTTPError as exc:
+            status = exc.response.status_code if exc.response is not None else "unknown"
+            LOGGER.exception("Immich HTTP error: %s", status)
+
+            if status in (401, 403):
+                return self._error_image(
+                    device_config,
+                    "Immich API key\nwas rejected",
+                )
+
+            if status == 404:
+                return self._error_image(
+                    device_config,
+                    "Album or image\nwas not found",
+                )
+
+            return self._error_image(
+                device_config,
+                f"Immich HTTP error\n{status}",
+            )
+
+        except requests.exceptions.RequestException as exc:
+            LOGGER.exception("Immich connection error: %s", exc)
+            return self._error_image(
+                device_config,
+                "Could not connect\nto Immich",
+            )
+
         except Exception as exc:
             LOGGER.exception("Immich Photos Album plugin error: %s", exc)
             return self._error_image(device_config, "Plugin error")
@@ -152,9 +192,10 @@ class ImmichPhotosAlbum(BasePlugin):
         album_id: str,
         timeout_seconds: int,
     ) -> dict[str, Any]:
-        endpoint = f"{server_url}/api/albums/{album_id}"
-
-        response = session.get(endpoint, timeout=timeout_seconds)
+        response = session.get(
+            f"{server_url}/api/albums/{album_id}",
+            timeout=timeout_seconds,
+        )
         response.raise_for_status()
 
         payload = response.json()
@@ -193,8 +234,12 @@ class ImmichPhotosAlbum(BasePlugin):
                 or ""
             )
 
-            width = self._as_int(asset.get("exifInfo", {}).get("exifImageWidth"), 0)
-            height = self._as_int(asset.get("exifInfo", {}).get("exifImageHeight"), 0)
+            exif_info = asset.get("exifInfo")
+            if not isinstance(exif_info, dict):
+                exif_info = {}
+
+            width = self._as_int(exif_info.get("exifImageWidth"), default=0)
+            height = self._as_int(exif_info.get("exifImageHeight"), default=0)
 
             photos.append(
                 ImmichPhoto(
@@ -246,7 +291,10 @@ class ImmichPhotosAlbum(BasePlugin):
 
         for image_url in image_urls:
             try:
-                response = session.get(image_url, timeout=timeout_seconds)
+                response = session.get(
+                    image_url,
+                    timeout=timeout_seconds,
+                )
                 response.raise_for_status()
 
                 image = Image.open(io.BytesIO(response.content))
@@ -254,9 +302,12 @@ class ImmichPhotosAlbum(BasePlugin):
 
                 return self._to_rgb(image)
 
-            except Exception as exc:
+            except (
+                requests.exceptions.RequestException,
+                OSError,
+            ) as exc:
                 LOGGER.debug(
-                    "Failed to retrieve photo from %s: %s",
+                    "Could not retrieve Immich image from %s: %s",
                     image_url,
                     exc,
                 )
@@ -448,7 +499,7 @@ class ImmichPhotosAlbum(BasePlugin):
     ) -> int:
         try:
             number = int(str(value).strip())
-        except Exception:
+        except (TypeError, ValueError):
             number = default
 
         if minimum is not None:
