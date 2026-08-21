@@ -96,7 +96,15 @@ class ImmichPhotosAlbum(BasePlugin):
             )
 
             album_name = str(album.get("albumName") or "Immich Album")
-            photos = self._extract_photos(album.get("assets", []))
+
+            assets = self._fetch_album_assets(
+                session=session,
+                server_url=server_url,
+                album_id=album_id,
+                timeout_seconds=timeout_seconds,
+            )
+
+            photos = self._extract_photos(assets)
 
             if not photos:
                 return self._error_image(
@@ -203,6 +211,40 @@ class ImmichPhotosAlbum(BasePlugin):
             raise RuntimeError("Immich returned an unexpected album response.")
 
         return payload
+
+    def _fetch_album_assets(
+        self,
+        session: requests.Session,
+        server_url: str,
+        album_id: str,
+        timeout_seconds: int,
+    ) -> list[Any]:
+        response = session.post(
+            f"{server_url}/api/search/metadata",
+            json={
+                "albumIds": [album_id],
+                "page": 1,
+                "size": 1000,
+                "withArchived": False,
+                "withDeleted": False,
+            },
+            timeout=timeout_seconds,
+        )
+        response.raise_for_status()
+
+        payload = response.json()
+        if not isinstance(payload, dict):
+            raise RuntimeError("Immich returned an unexpected asset search response.")
+
+        assets = payload.get("assets")
+        if not isinstance(assets, dict):
+            return []
+
+        items = assets.get("items")
+        if not isinstance(items, list):
+            return []
+
+        return items
 
     def _extract_photos(self, assets: Any) -> list[ImmichPhoto]:
         if not isinstance(assets, list):
